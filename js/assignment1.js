@@ -4,107 +4,88 @@ import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 
-const container = document.getElementById( 'container1' );
-container.style.position = 'relative';
 
-let renderer, stats, gui;
-let scene, camera, controls, cube, dirlight, ambientLight;
-let isinitialized = false;
+function initViewer(containerId, assetPath) {
+    // Get the container element where the viewer will be appended
+    const container = document.getElementById(containerId);
+    container.style.position = 'relative';
 
-function initScene() {
-	scene = new THREE.Scene();
-	scene.background = new THREE.Color( 0xffffff);
-	camera = new THREE.PerspectiveCamera( 75, window.innerWidth / (window.innerHeight * 0.5), 0.1, 1000 );
-	
-	renderer = new THREE.WebGLRenderer();
-	renderer.setSize( window.innerWidth, window.innerHeight * 0.5 );
-	container.appendChild( renderer.domElement );
+    // Create a new THREE.js scene
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xffffff);
 
-	controls = new OrbitControls( camera, renderer.domElement );
-	controls.minDistance = 2;
-	controls.maxDistance = 10;
-	controls.addEventListener( 'change', function() { renderer.render( scene, camera ); });
+    // Set up the camera
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight * 0.5), 0.1, 1000);
+    camera.position.z = 5;
 
-	dirlight = new THREE.DirectionalLight( 0xffffff, 0.5 );
-	dirlight.position.set( 0, 0, 1 );
-	scene.add( dirlight );
+    // Set up the WebGL renderer
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight * 0.5);
+    container.appendChild(renderer.domElement);
 
-	ambientLight = new THREE.AmbientLight( 0x404040, 2 );
-	scene.add( ambientLight );
+    // Set up orbit controls for the camera
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.minDistance = 2;
+    controls.maxDistance = 10;
+    controls.addEventListener('change', () => renderer.render(scene, camera));
 
+    // Add lighting to the scene
+    scene.add(new THREE.AmbientLight(0x404040, 2));
+    const dirlight = new THREE.DirectionalLight(0xffffff, 0.5);
+    dirlight.position.set(0, 0, 1);
+    scene.add(dirlight);
 
-	// the loading of the object is asynchronous
-	let loader = new OBJLoader();
-	loader.load( 
-		// resource URL
-		'../assets/cube.obj', 
-		// called when resource is loaded
-		function ( object ) {
-			cube = object.children[0];
-			cube.material = new THREE.MeshPhongMaterial( { color: 0x999999 });
-			cube.position.set( 0, 0, 0 );
-			cube.name = "cube";
-			scene.add( cube );
-		},
-		// called when loading is in progresses
-		function ( xhr ) {
-			console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
-		},
-		// called when loading has errors
-		function ( error ) {
-			console.log( 'An error happened' + error);
-		}
-	);
-	
-	camera.position.z = 5;
+    // Load the 3D model
+    const loader = new OBJLoader();
+    loader.load(
+        assetPath,
+        (object) => {
+            const model = object.children[0];
+            model.material = new THREE.MeshPhongMaterial({ color: 0x999999 });
+            model.position.set(0, 0, 0);
+            scene.add(model);
+            initGUI(container, model);
+        },
+        (xhr) => console.log(`${(xhr.loaded / xhr.total * 100).toFixed(2)}% loaded`),
+        (error) => console.error('An error happened', error)
+    );
+
+    // Set up the stats panel
+    const stats = new Stats();
+    stats.showPanel(0);
+    stats.dom.style.position = 'absolute';
+    stats.dom.style.top = '0px';
+    container.appendChild(stats.dom);
+
+    // Animation loop to render the scene and update stats
+    function animate() {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+        stats.update();
+    }
+
+    animate();
+
+    // Adjust camera and renderer size when the window is resized
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / (window.innerHeight * 0.5);
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight * 0.5);
+    }
+    window.addEventListener('resize', onWindowResize, false);
 }
 
-function initSTATS() {
-	stats = new Stats();
-	stats.showPanel( 0 );
-	stats.dom.style.position = 'absolute';
-	stats.dom.style.top = 0;
-	stats.dom.style.left = 0;
-	container.appendChild( stats.dom );
+function initGUI(container, model) {
+    const gui = new GUI({ autoPlace: false });
+    gui.add(model.position, 'x', -1, 1);
+    gui.add(model.position, 'y', -1, 1);
+    gui.add(model.position, 'z', -1, 1);
+
+    container.appendChild(gui.domElement);
+    gui.domElement.style.position = 'absolute';
+    gui.domElement.style.top = '48px';
+    gui.domElement.style.right = '0px';
 }
 
-function initGUI() {
-	if (!isinitialized) {
-		gui = new GUI();
-		cube = scene.getObjectByName( "cube" );
-		gui.add( cube.position, 'x', -1, 1 );
-		gui.add( cube.position, 'y', -1, 1 );
-		gui.add( cube.position, 'z', -1, 1 );
-		gui.domElement.style.position = 'absolute';
-		gui.domElement.style.top = '0px';
-		gui.domElement.style.right = '0px';
-		container.appendChild( gui.domElement );
-		isinitialized = true;
-	}
-}
-
-function animate() {
-	requestAnimationFrame( animate );
-
-	cube = scene.getObjectByName( "cube" );
-	if (cube) {
-		cube.rotation.x += 0.01;
-		cube.rotation.y += 0.01;
-		initGUI(); // initialize the GUI after the object is loaded
-	}
-
-	renderer.render( scene, camera );
-	stats.update();
-}
-
-function onWindowResize() {
-	camera.aspect = window.innerWidth / (window.innerHeight * 0.5);
-	camera.updateProjectionMatrix();
-	renderer.setSize( window.innerWidth, window.innerHeight * 0.5 );
-};
-
-window.addEventListener( 'resize', onWindowResize, false );
-
-initScene();
-initSTATS();
-animate();
+initViewer('container1', '../assets/assignment1/cube_subdivided.obj');
+initViewer('container2', '../assets/assignment1/cube_decimated.obj');
