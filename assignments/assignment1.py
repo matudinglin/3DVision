@@ -1,6 +1,7 @@
 import openmesh as om
 import numpy as np
 import heapq
+import cProfile
 
 def subdivision_loop(mesh, iterations=1):
     """
@@ -21,7 +22,7 @@ def subdivision_loop(mesh, iterations=1):
         new_mesh = om.TriMesh()
         
         new_vertex_handles = {}
-        # Step 1: Calculate new positions for existing vertices
+        # Calculate new positions for existing vertices
         for vh in mesh.vertices():
             # Compute beta
             n = mesh.valence(vh)
@@ -34,7 +35,7 @@ def subdivision_loop(mesh, iterations=1):
             new_vertex_handles[vh.idx()] = new_mesh.add_vertex(new_pos)
         
         edge_to_new_vertex = {}
-        # Step 2: Split every edge and create new vertices at midpoints
+        # Split every edge and create new vertices at midpoints
         for eh in mesh.edges():
             # Retrieve halfedge handles and vertices
             heh = mesh.halfedge_handle(eh, 0)
@@ -55,7 +56,7 @@ def subdivision_loop(mesh, iterations=1):
             new_vh = new_mesh.add_vertex(midpoint)
             edge_to_new_vertex[eh.idx()] = new_vh
         
-        # Step 3: Reconnect vertices to form new faces
+        # Reconnect vertices to form new faces
         for fh in mesh.faces():
             # Retrieve original vertex indices of the face
             face_vhs = [vh.idx() for vh in mesh.fv(fh)]
@@ -87,35 +88,58 @@ def simplify_quadric_error(mesh, face_count=1):
     :param face_count: number of faces desired in the resulting mesh.
     :return: mesh after decimation
     """
-    def create_edge_costs(edge_costs, quadrics, mesh):
-        edge_costs.clear()
-        for eh in mesh.edges():
-            # Set Kij = Ki+ Kj
-            heh = mesh.halfedge_handle(eh, 0)
-            vh0 = mesh.to_vertex_handle(heh)
-            vh1 = mesh.from_vertex_handle(heh)
-            Kij = quadrics[vh0.idx()] + quadrics[vh1.idx()]
-            # TODO: Compute optimal collapse point x and cost
-            # Compute optimal collapse point x and cost
-            # If Kij is not invertible, set x as midpoint of the edge
-            # if np.linalg.det(Kij) == 0:
-            #     x = 0.5 * (np.array(mesh.point(vh0)) + np.array(mesh.point(vh1)))
-            #     x = np.append(x, 1)
-            # else:
-            #     w = np.array([0, 0, 0, 1]).T
-            #     x = np.dot(np.linalg.inv(Kij), w)
+    def calculate_edge_cost(mesh, eh):
+        heh = mesh.halfedge_handle(eh, 0)
+        vh0 = mesh.to_vertex_handle(heh)
+        vh1 = mesh.from_vertex_handle(heh)
+        K0 = mesh.vertex_property("quad", vh0)
+        K1 = mesh.vertex_property("quad", vh1)
+        Kij = K0 + K1
+        Q_temp = np.concatenate([Kij[:3,:], np.array([0,0,0,1]).reshape(1,4)], axis=0)
+        # Compute optimal collapse point x
+        if np.linalg.det(Q_temp) > 0:
+            x = np.matmul(np.linalg.inv(Q_temp), np.array([0, 0, 0, 1])).reshape(4, 1)
+            cost = np.matmul(np.matmul(x.T, Kij), x)
+            x = x.reshape(4)
+        else:
             x = 0.5 * (np.array(mesh.point(vh0)) + np.array(mesh.point(vh1)))
             x = np.append(x, 1)
-            cost = np.dot(x.T, np.dot(Kij, x))
-            edge_costs.append((cost, heh, x, vh0, vh1))
-        
-    def compute_ki(mesh, quadrics):
-        for fh in mesh.faces():
+            cost = np.matmul(np.matmul(x.T, Kij), x)
+            v_1 = np.append(mesh.point(vh0), 1).reshape(4, 1)
+            v_2 = np.append(mesh.point(vh1), 1).reshape(4, 1)
+            v_mid = (v_1 + v_2) / 2
+            
+            delta_v_1 = np.matmul(np.matmul(v_1.T, Kij), v_1)
+            delta_v_2 = np.matmul(np.matmul(v_2.T, Kij), v_2)
+            delta_v_mid = np.matmul(np.matmul(v_mid.T, Kij), v_mid)
+            
+            errors = np.array([delta_v_1, delta_v_2, delta_v_mid]).flatten()  # Flatten for argmin
+            min_error_index = np.argmin(errors)
+            
+            positions = np.hstack([v_1, v_2, v_mid])  # Stack positions side by side
+            current_v_opt = positions[:, min_error_index].reshape(4)
+            x = current_v_opt[:3] 
+            x = np.append(x, 1)
+        # x = 0.5 * (np.array(mesh.point(vh0)) + np.array(mesh.point(vh1)))
+        # x = np.append(x, 1)
+        # cost = np.matmul(np.matmul(x.T, Kij), x)
+        return cost, x
+
+    def update_edge_costs(edge_costs, mesh, vh):
+        for eh in mesh.ve(vh):
+            edge_costs = [(cost, eh, x) for cost, eh, x in edge_costs if eh != eh]
+            cost, x = calculate_edge_cost(mesh, eh)
+            heapq.heappush(edge_costs, (cost, eh, x))
+
+    def compute_Ki_per_vertex(mesh, vh):
+        Ki = np.zeros((4, 4))
+        for fh in mesh.vf(vh):
             norm = np.array(mesh.calc_face_normal(fh))
-            norm = np.append(norm, 0)
-            K = np.outer(norm, norm)
-            for vh in mesh.fv(fh):
-                quadrics[vh.idx()] += K
+            norm = norm / np.linalg.norm(norm)
+            d = -np.dot(norm, np.array(mesh.point(vh)))
+            plane = np.append(norm, d)
+            Ki += np.outer(plane, plane)
+        mesh.set_vertex_property("quad", vh, Ki)  
     
     print(f"------> Original Mesh - Vertices: {mesh.n_vertices()}, Faces: {mesh.n_faces()}, Edges: {mesh.n_edges()}")
     
@@ -124,34 +148,39 @@ def simplify_quadric_error(mesh, face_count=1):
         return mesh
     
     # Compute Ki for each vertex
-    quadrics = {vh.idx(): np.zeros((4, 4)) for vh in mesh.vertices()}
-    compute_ki(mesh, quadrics)
+    for vh in mesh.vertices():
+        compute_Ki_per_vertex(mesh, vh)
     
     # Create a priority queue of edges based on the quadric error
     edge_costs = []
     heapq.heapify(edge_costs)
-    create_edge_costs(edge_costs, quadrics, mesh)
+    for eh in mesh.edges():
+        cost, x = calculate_edge_cost(mesh, eh)
+        heapq.heappush(edge_costs, (cost, eh, x))
     
     # Collapse edges until the target face count is reached
     while mesh.n_faces() > face_count:
         # Find the edge whose collapse minimizes the total quadric error
-        _, heh, x, vh0, vh1 = heapq.heappop(edge_costs)
-        # Collapse the edge
+        _, eh, x = heapq.heappop(edge_costs)
+        heh = mesh.halfedge_handle(eh, 0)
+        vh0 = mesh.to_vertex_handle(heh)
+        vh1 = mesh.from_vertex_handle(heh)
         if not mesh.is_collapse_ok(heh):
-            heapq.heappop(edge_costs)
             continue
+        # Collapse the edge
         mesh.collapse(heh)
+        mesh.set_point(vh1, x[:3])
+        # Update quadrics for the vertices
+        quad0 = mesh.vertex_property("quad", vh0)
+        quad1 = mesh.vertex_property("quad", vh1)
+        mesh.set_vertex_property("quad", vh1, quad0 + quad1)
+        for vh in mesh.vv(vh1):
+            compute_Ki_per_vertex(mesh, vh)
+        # Update the edge costs
+        update_edge_costs(edge_costs, mesh, vh1)
+        # Remove collapsed elements
         mesh.garbage_collection()
-        mesh.set_point(vh0, x[:3])
         print(f"- Collapsed Vertices: {mesh.n_vertices()}, Faces: {mesh.n_faces()}, Edges: {mesh.n_edges()}")
-        # Update the quadric for the new vertex
-        quadrics[vh0.idx()] = quadrics[vh0.idx()] + quadrics[vh1.idx()]
-        quadrics.pop(vh1.idx())
-        # Recreate the edge costs
-        # TODO: Update edge costs
-        quadrics = {vh.idx(): np.zeros((4, 4)) for vh in mesh.vertices()}
-        compute_ki(mesh, quadrics)
-        create_edge_costs(edge_costs, quadrics, mesh)
         
     print(f"------> New Mesh - Vertices: {mesh.n_vertices()}, Faces: {mesh.n_faces()}, Edges: {mesh.n_edges()}")
     return mesh
@@ -164,7 +193,7 @@ if __name__ == '__main__':
     
     '''Apply loop subdivision over the loaded mesh'''
     # mesh_subdivided = mesh.subdivide_loop(iterations=1)
-    #mesh_subdivided = subdivision_loop(mesh, iterations=2)
+    # mesh_subdivided = subdivision_loop(mesh, iterations=1)
     
     '''Save the subdivided mesh'''
     # mesh_subdivided.export('assets/assignment1/cube_subdivided.obj')
@@ -172,7 +201,9 @@ if __name__ == '__main__':
 
     '''Apply quadratic error mesh decimation over the loaded mesh'''
     # mesh_decimated = mesh.simplify_quadric_decimation(4)
+    # with cProfile.Profile() as pr:
     mesh_decimated = simplify_quadric_error(mesh, face_count=500)
+    #     pr.print_stats()
     
     '''Save the decimated mesh'''
     # mesh_decimated.export('assets/assignment1/cube_decimated.obj')
