@@ -95,10 +95,10 @@ def simplify_quadric_error(mesh, face_count=1):
         K0 = mesh.vertex_property("quad", vh0)
         K1 = mesh.vertex_property("quad", vh1)
         Kij = K0 + K1
-        Q_temp = np.concatenate([Kij[:3,:], np.array([0,0,0,1]).reshape(1,4)], axis=0)
+        B = np.concatenate([Kij[:3,:], np.array([0,0,0,1]).reshape(1,4)], axis=0)
         # Compute optimal collapse point x
-        if np.linalg.det(Q_temp) > 0:
-            x = np.matmul(np.linalg.inv(Q_temp), np.array([0, 0, 0, 1])).reshape(4, 1)
+        if np.linalg.det(B) > 0:
+            x = np.matmul(np.linalg.inv(B), np.array([0, 0, 0, 1])).reshape(4, 1)
             cost = np.matmul(np.matmul(x.T, Kij), x)
             x = x.reshape(4)
         else:
@@ -120,9 +120,6 @@ def simplify_quadric_error(mesh, face_count=1):
             current_v_opt = positions[:, min_error_index].reshape(4)
             x = current_v_opt[:3] 
             x = np.append(x, 1)
-        # x = 0.5 * (np.array(mesh.point(vh0)) + np.array(mesh.point(vh1)))
-        # x = np.append(x, 1)
-        # cost = np.matmul(np.matmul(x.T, Kij), x)
         return cost, x
 
     def update_edge_costs(edge_costs, mesh, vh):
