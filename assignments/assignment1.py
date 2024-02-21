@@ -97,45 +97,71 @@ def simplify_quadric_error(mesh, face_count=1):
         Kij = K0 + K1
         B = np.concatenate([Kij[:3,:], np.array([0,0,0,1]).reshape(1,4)], axis=0)
         # Compute optimal collapse point x
-        if np.linalg.det(B) > 0:
-            x = np.matmul(np.linalg.inv(B), np.array([0, 0, 0, 1])).reshape(4, 1)
-            cost = np.matmul(np.matmul(x.T, Kij), x)
-            x = x.reshape(4)
-        else:
-            x = 0.5 * (np.array(mesh.point(vh0)) + np.array(mesh.point(vh1)))
-            x = np.append(x, 1)
-            cost = np.matmul(np.matmul(x.T, Kij), x)
-            v_1 = np.append(mesh.point(vh0), 1).reshape(4, 1)
-            v_2 = np.append(mesh.point(vh1), 1).reshape(4, 1)
-            v_mid = (v_1 + v_2) / 2
+        # if np.linalg.det(B) > 0:
+        #     x = np.matmul(np.linalg.inv(B), np.array([0, 0, 0, 1])).reshape(4, 1)
+        #     cost = np.matmul(np.matmul(x.T, Kij), x)
+        #     x = x.reshape(4)
+        # else:
+        #     # x = 0.5 * (np.array(mesh.point(vh0)) + np.array(mesh.point(vh1)))
+        #     # x = np.append(x, 1)
+        #     # cost = np.matmul(np.matmul(x.T, Kij), x)
+        #     v_1 = np.append(mesh.point(vh0), 1).reshape(4, 1)
+        #     v_2 = np.append(mesh.point(vh1), 1).reshape(4, 1)
+        #     v_mid = (v_1 + v_2) / 2
             
-            delta_v_1 = np.matmul(np.matmul(v_1.T, Kij), v_1)
-            delta_v_2 = np.matmul(np.matmul(v_2.T, Kij), v_2)
-            delta_v_mid = np.matmul(np.matmul(v_mid.T, Kij), v_mid)
+        #     delta_v_1 = np.matmul(np.matmul(v_1.T, Kij), v_1)
+        #     delta_v_2 = np.matmul(np.matmul(v_2.T, Kij), v_2)
+        #     delta_v_mid = np.matmul(np.matmul(v_mid.T, Kij), v_mid)
             
-            errors = np.array([delta_v_1, delta_v_2, delta_v_mid]).flatten()  # Flatten for argmin
-            min_error_index = np.argmin(errors)
+        #     errors = np.array([delta_v_1, delta_v_2, delta_v_mid]).flatten()  # Flatten for argmin
+        #     min_error_index = np.argmin(errors)
             
-            positions = np.hstack([v_1, v_2, v_mid])  # Stack positions side by side
-            current_v_opt = positions[:, min_error_index].reshape(4)
-            x = current_v_opt[:3] 
-            x = np.append(x, 1)
+        #     positions = np.hstack([v_1, v_2, v_mid])  # Stack positions side by side
+        #     current_v_opt = positions[:, min_error_index].reshape(4)
+        #     x = current_v_opt[:3] 
+        #     x = np.append(x, 1)
+            
+        #     v_1=np.append(mesh.point(vh0),1).reshape(4,1)
+        #     v_2=np.append(mesh.point(vh1),1).reshape(4,1)
+        #     v_mid=(v_1+v_2)/2
+        #     delta_v_1=np.matmul(np.matmul(v_1.T, Kij), v_1)
+        #     delta_v_2=np.matmul(np.matmul(v_2.T, Kij), v_2)
+        #     delta_v_mid=np.matmul(np.matmul(v_mid.T, Kij), v_mid)
+        #     cost=np.min(np.array([delta_v_1, delta_v_2, delta_v_mid]))
+        #     min_delta_loc=np.argmin(np.array([delta_v_1, delta_v_2, delta_v_mid]))
+        #     x=np.concatenate([v_1,v_2,v_mid],axis=1)[:,min_delta_loc].reshape(4)
+        x = 0.5 * (np.array(mesh.point(vh0)) + np.array(mesh.point(vh1)))
+        x = np.append(x, 1)
+        cost = np.matmul(np.matmul(x.T, Kij), x)
         return cost, x
 
-    def update_edge_costs(edge_costs, mesh, vh):
-        for eh in mesh.ve(vh):
-            edge_costs = [(cost, eh, x) for cost, eh, x in edge_costs if eh != eh]
+    def update_edge_costs(edge_costs, mesh, vh0, vh1):
+        for i, (cost, eh, x, valid) in enumerate(edge_costs):
+            if mesh.from_vertex_handle(mesh.halfedge_handle(eh, 0)) == vh1 or \
+               mesh.to_vertex_handle(mesh.halfedge_handle(eh, 0)) == vh1 or \
+               mesh.from_vertex_handle(mesh.halfedge_handle(eh, 0)) == vh0 or \
+               mesh.to_vertex_handle(mesh.halfedge_handle(eh, 0)) == vh0:
+                edge_costs[i] = (cost, eh, x, False)
+            
+        for eh in mesh.ve(vh0):
             cost, x = calculate_edge_cost(mesh, eh)
-            heapq.heappush(edge_costs, (cost, eh, x))
+            heapq.heappush(edge_costs, (cost, eh, x, True))
+        
 
     def compute_Ki_per_vertex(mesh, vh):
         Ki = np.zeros((4, 4))
         for fh in mesh.vf(vh):
-            norm = np.array(mesh.calc_face_normal(fh))
-            norm = norm / np.linalg.norm(norm)
-            d = -np.dot(norm, np.array(mesh.point(vh)))
-            plane = np.append(norm, d)
-            Ki += np.outer(plane, plane)
+            # norm = np.array(mesh.calc_face_normal(fh))
+            # norm = norm / np.linalg.norm(norm)
+            # d = -np.dot(norm, np.array(mesh.point(vh)))
+            # plane = np.append(norm, d)
+            point_1 = mesh.point(mesh.to_vertex_handle(mesh.halfedge_handle(fh)))
+            point_2 = mesh.point(mesh.to_vertex_handle(mesh.next_halfedge_handle(mesh.halfedge_handle(fh))))
+            point_3 = mesh.point(mesh.to_vertex_handle(mesh.next_halfedge_handle(mesh.next_halfedge_handle(mesh.halfedge_handle(fh)))))
+            point_mat=np.array([point_1, point_2, point_3])
+            abc=np.matmul(np.linalg.inv(point_mat), np.array([[1],[1],[1]]))
+            plane = np.concatenate([abc.T, np.array(-1).reshape(1, 1)], axis=1)/(np.sum(abc**2)**0.5)
+            Ki += np.matmul(plane.T, plane)
         mesh.set_vertex_property("quad", vh, Ki)  
     
     print(f"------> Original Mesh - Vertices: {mesh.n_vertices()}, Faces: {mesh.n_faces()}, Edges: {mesh.n_edges()}")
@@ -153,28 +179,27 @@ def simplify_quadric_error(mesh, face_count=1):
     heapq.heapify(edge_costs)
     for eh in mesh.edges():
         cost, x = calculate_edge_cost(mesh, eh)
-        heapq.heappush(edge_costs, (cost, eh, x))
+        heapq.heappush(edge_costs, (cost, eh, x, True))
     
     # Collapse edges until the target face count is reached
     while mesh.n_faces() > face_count:
         # Find the edge whose collapse minimizes the total quadric error
-        _, eh, x = heapq.heappop(edge_costs)
+        _, eh, x, valid = heapq.heappop(edge_costs)
         heh = mesh.halfedge_handle(eh, 0)
         vh0 = mesh.to_vertex_handle(heh)
         vh1 = mesh.from_vertex_handle(heh)
-        if not mesh.is_collapse_ok(heh):
+        if not mesh.is_collapse_ok(heh) or not valid:
+            print(f"Invalid collapse: {vh0.idx()} -> {vh1.idx()}")
             continue
         # Collapse the edge
         mesh.collapse(heh)
-        mesh.set_point(vh1, x[:3])
+        mesh.set_point(vh0, x[:3])
         # Update quadrics for the vertices
         quad0 = mesh.vertex_property("quad", vh0)
         quad1 = mesh.vertex_property("quad", vh1)
-        mesh.set_vertex_property("quad", vh1, quad0 + quad1)
-        for vh in mesh.vv(vh1):
-            compute_Ki_per_vertex(mesh, vh)
+        mesh.set_vertex_property("quad", vh0, quad0 + quad1)
         # Update the edge costs
-        update_edge_costs(edge_costs, mesh, vh1)
+        update_edge_costs(edge_costs, mesh, vh0, vh1)
         # Remove collapsed elements
         mesh.garbage_collection()
         print(f"- Collapsed Vertices: {mesh.n_vertices()}, Faces: {mesh.n_faces()}, Edges: {mesh.n_edges()}")
@@ -199,9 +224,9 @@ if __name__ == '__main__':
     '''Apply quadratic error mesh decimation over the loaded mesh'''
     # mesh_decimated = mesh.simplify_quadric_decimation(4)
     # with cProfile.Profile() as pr:
-    mesh_decimated = simplify_quadric_error(mesh, face_count=500)
+    mesh_decimated = simplify_quadric_error(mesh, face_count=1000)
     #     pr.print_stats()
     
     '''Save the decimated mesh'''
     # mesh_decimated.export('assets/assignment1/cube_decimated.obj')
-    om.write_mesh("assets/assignment1/cube_decimated.obj", mesh_decimated)
+    om.write_mesh("assets/cube_decimated.obj", mesh_decimated)
