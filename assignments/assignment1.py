@@ -97,20 +97,14 @@ def simplify_quadric_error(mesh, face_count=1):
         Kij = K0 + K1
         B = np.concatenate([Kij[:3,:], np.array([0,0,0,1]).reshape(1,4)], axis=0)
         # Compute optimal collapse point x
-        if np.linalg.det(B) > 0:
+        if np.linalg.det(B) != 0:
             x = np.matmul(np.linalg.inv(B), np.array([0, 0, 0, 1])).reshape(4, 1)
             cost = np.matmul(np.matmul(x.T, Kij), x)
             x = x.reshape(4)
         else:
-            v1=np.append(mesh.point(vh0),1).reshape(4,1)
-            v2=np.append(mesh.point(vh1),1).reshape(4,1)
-            v_mid=(v1+v2)/2
-            delta_v1=np.matmul(np.matmul(v1.T, Kij), v1)
-            delta_v2=np.matmul(np.matmul(v2.T, Kij), v2)
-            delta_v_mid=np.matmul(np.matmul(v_mid.T, Kij), v_mid)
-            cost=np.min(np.array([delta_v1, delta_v2, delta_v_mid]))
-            min_delta_loc=np.argmin(np.array([delta_v1, delta_v2, delta_v_mid]))
-            x=np.concatenate([v1,v2,v_mid],axis=1)[:,min_delta_loc].reshape(4)
+            x = 0.5 * (np.array(mesh.point(vh0)) + np.array(mesh.point(vh1)))
+            cost = np.matmul(np.matmul(x.T, Kij), x)
+            x = np.append(x, 1)
         return cost, x
 
     def update_edge_costs(edge_costs, mesh, vh0, vh1):
