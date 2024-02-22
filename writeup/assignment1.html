@@ -23,6 +23,7 @@
             <li>Implement Quadratic Error based mesh decimation. &#10004</li>
             <li>Write up your project, detials of data structure, algorithms, reporting runtime and visualiztions of results with different parameters. &#10004</li>
             <li>Extra credit: Analyze corner cases (failure cases) and find solutions to prevent them. &#10004</li>
+            <li>Extra credit: Implement Loop subdivision using two different data structure. &#10004</li>
             <li>Extra credit: Preserve the original vertices after decimation. &#10004</li></li>
         </ul>
         
@@ -33,15 +34,30 @@
     </p>
 
     <h2>Data structure and Algorithm</h2>
-    <p>Here is the pseudo code I used for <b>loop subdivision</b>, more details could be found in comments of the code:
+    <h3> Loop Subdivision</h3>
+    <p>
+        I used both halfedge data structure and array data structure to implement loop subdivision. 
+        <br><br>
+        In summary, halfedge data structure is more efficient in terms of memory and time complexity. However, it is more complex to implement and debug. On the other hand, array data structure is not easy to understand in terms of mesh operations.
+        <br><br>
+        For the boundary case, I used a mask array to store the boundary vertices and edges in array data implementation. In halfedge data implementation, I used a flag to indicate whether the edge is on the boundary.
+        <br><br>
+        Here is the pseudo code I used for loop subdivision, more details could be found in comments of the code:
         <ul>
             <li>Calculate new positions for existing vertices </li>
             <li>Split every edge and create new vertices at midpoints</li>
             <li>Reconnect vertices to form new faces  </li>
         </ul>
     </p>
-
-    <p>Here is the pseudo code I used for <b>mesh simplification</b>, more details could be found in comments of the code:
+    <h3> Mesh Simplification</h3>
+    <p>
+        I used halfedge data structure to implement quadric error based mesh simplification.
+        <br><br>
+        I compute the quadric for each vertex and cost for each edge in the halfedge data structure, and store them as attributes of the vertices and edges. I tried both min heap implementation and linear search implementation to find the edge whose collapse minimizes the total quadric error. The min heap implementation is more efficient in terms of time complexity. However, in practice, due to the garbage collection in openmesh library, the min heap implementation is not as efficient as the linear search implementation. So I used the linear search implementation in the final version.
+        <br><br>
+        To get the subset decimation, I remain the original vertices position after edge collapse, and update the quadric for the related vertices and edges.
+        <br><br>
+        Here is the pseudo code I used for mesh simplification, more details could be found in comments of the code:
         <ul>
             <li>Compute quadric for each vertex</li>
             <li>Compute edge cost for each valid pair</li>
@@ -54,10 +70,10 @@
     </p>
     
     <h2>Loop Subdivision</h2>
-    <p>Here is the cube after loop subdivision, iteration = 3, runtime = 0.026s:</p>
+    <p>Here is the cube after loop subdivision using halfedge data structure, iteration = 3, runtime = 0.026s:</p>
     <div id="container1"></div>
 
-    <p>Here is the bunny after loop subdivision, iteration = 1, runtime = 0.507s:</p>
+    <p>Here is the bunny after loop subdivisionusing halfedge data structure, iteration = 1, runtime = 0.507s:</p>
     <div id="container2"></div>
 
     <h2>Quadric Error Mesh Decimation</h2>
