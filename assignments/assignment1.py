@@ -107,20 +107,6 @@ def simplify_quadric_error(mesh, face_count=1):
             x = np.append(x, 1)
         return cost, x
 
-    def update_edge_costs(edge_costs, mesh, vh0, vh1):
-        for i, (cost, eh, x, _) in enumerate(edge_costs):
-            heh = mesh.halfedge_handle(eh, 0)
-            if mesh.from_vertex_handle(heh) == vh1 or \
-               mesh.to_vertex_handle(heh) == vh1 or \
-               mesh.from_vertex_handle(heh) == vh0 or \
-               mesh.to_vertex_handle(heh) == vh0:
-                edge_costs[i] = (cost, eh, x, False)
-            
-        for eh in mesh.ve(vh0):
-            cost, x = calculate_edge_cost(mesh, eh)
-            heapq.heappush(edge_costs, (cost, eh, x, True))
-        
-
     def compute_Ki_per_vertex(mesh, vh):
         Ki = np.zeros((4, 4))
         for fh in mesh.vf(vh):
@@ -131,7 +117,7 @@ def simplify_quadric_error(mesh, face_count=1):
             temp = np.matmul(np.linalg.inv(v_matrix), np.array([[1],[1],[1]]))
             plane = np.concatenate([temp.T, np.array(-1).reshape(1, 1)], axis = 1) / (np.sum(temp**2)**0.5)
             Ki += np.matmul(plane.T, plane)
-        mesh.set_vertex_property("quad", vh, Ki)  
+        mesh.set_vertex_property("quad", vh, Ki)
     
     print(f"------> Original Mesh - Vertices: {mesh.n_vertices()}, Faces: {mesh.n_faces()}, Edges: {mesh.n_edges()}")
     
@@ -143,31 +129,40 @@ def simplify_quadric_error(mesh, face_count=1):
     for vh in mesh.vertices():
         compute_Ki_per_vertex(mesh, vh)
     
-    # Create a priority queue of edges based on the quadric error
-    edge_costs = []
-    heapq.heapify(edge_costs)
+    # Compute edge costs
     for eh in mesh.edges():
         cost, x = calculate_edge_cost(mesh, eh)
-        heapq.heappush(edge_costs, (cost, eh, x, True))
+        mesh.set_edge_property("cost", eh, cost)
+        mesh.set_edge_property("x", eh, x)
     
     # Collapse edges until the target face count is reached
     while mesh.n_faces() > face_count:
         # Find the edge whose collapse minimizes the total quadric error
-        _, eh, x, valid = heapq.heappop(edge_costs)
-        heh = mesh.halfedge_handle(eh, 0)
-        vh0 = mesh.to_vertex_handle(heh)
-        vh1 = mesh.from_vertex_handle(heh)
-        if not mesh.is_collapse_ok(heh) or not valid:
-            continue
+        min_cost = float("inf")
+        min_x = None
+        min_eh = None
+        for eh in mesh.edges():
+            cost = mesh.edge_property("cost", eh)
+            if cost < min_cost:
+                min_cost = cost
+                min_eh = eh
+                min_x = mesh.edge_property("x", eh)
+        # Retrieve halfedge handle and vertices
+        min_heh = mesh.halfedge_handle(min_eh, 0)
+        vh0 = mesh.to_vertex_handle(min_heh)
+        vh1 = mesh.from_vertex_handle(min_heh)
         # Collapse the edge
-        mesh.collapse(heh)
-        mesh.set_point(vh0, x[:3])
+        mesh.collapse(min_heh)
+        mesh.set_point(vh0, min_x[:3])
         # Update quadrics for the vertices
         quad0 = mesh.vertex_property("quad", vh0)
         quad1 = mesh.vertex_property("quad", vh1)
         mesh.set_vertex_property("quad", vh0, quad0 + quad1)
         # Update the edge costs
-        update_edge_costs(edge_costs, mesh, vh0, vh1)
+        for eh in mesh.ve(vh0):
+            cost, x = calculate_edge_cost(mesh, eh)
+            mesh.set_edge_property("cost", eh, cost)
+            mesh.set_edge_property("x", eh, x)
         # Remove collapsed elements
         mesh.garbage_collection()
         print(f"- Collapsed Vertices: {mesh.n_vertices()}, Faces: {mesh.n_faces()}, Edges: {mesh.n_edges()}")
