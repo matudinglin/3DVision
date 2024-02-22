@@ -108,12 +108,12 @@ def simplify_quadric_error(mesh, face_count=1):
         return cost, x
 
     def update_edge_costs(edge_costs, mesh, vh0, vh1):
-        # TODO: Make it more efficient
         for i, (cost, eh, x, _) in enumerate(edge_costs):
-            if mesh.from_vertex_handle(mesh.halfedge_handle(eh, 0)) == vh1 or \
-               mesh.to_vertex_handle(mesh.halfedge_handle(eh, 0)) == vh1 or \
-               mesh.from_vertex_handle(mesh.halfedge_handle(eh, 0)) == vh0 or \
-               mesh.to_vertex_handle(mesh.halfedge_handle(eh, 0)) == vh0:
+            heh = mesh.halfedge_handle(eh, 0)
+            if mesh.from_vertex_handle(heh) == vh1 or \
+               mesh.to_vertex_handle(heh) == vh1 or \
+               mesh.from_vertex_handle(heh) == vh0 or \
+               mesh.to_vertex_handle(heh) == vh0:
                 edge_costs[i] = (cost, eh, x, False)
             
         for eh in mesh.ve(vh0):
