@@ -81,7 +81,7 @@ def subdivision_loop(mesh, iterations=1):
 
     return mesh
 
-def simplify_quadric_error(mesh, face_count=1):
+def simplify_quadric_error(mesh, face_count=1, subset=False):
     """
     Apply quadratic error mesh decimation to the input mesh until the target face count is reached.
     :param mesh: input mesh
@@ -153,7 +153,10 @@ def simplify_quadric_error(mesh, face_count=1):
         vh1 = mesh.from_vertex_handle(min_heh)
         # Collapse the edge
         mesh.collapse(min_heh)
-        mesh.set_point(vh0, min_x[:3])
+        if subset:
+            mesh.set_point(vh0, mesh.point(vh0))
+        else:
+            mesh.set_point(vh0, min_x[:3])  
         # Update quadrics for the vertices
         quad0 = mesh.vertex_property("quad", vh0)
         quad1 = mesh.vertex_property("quad", vh1)
@@ -174,14 +177,14 @@ if __name__ == '__main__':
     '''Load mesh and print information'''
     mesh = om.read_trimesh("assets/bunny.obj")
     
-    '''Apply loop subdivision over the loaded mesh'''
+    # '''Apply loop subdivision over the loaded mesh'''
     # with cProfile.Profile() as pr:
     #     mesh_subdivided = subdivision_loop(mesh, iterations=1)
     #     pr.print_stats(sort='cumtime')
-    # om.write_mesh("assets/assignment1/cube_subdivided.obj", mesh_subdivided)
+    # om.write_mesh("assets/assignment1/subdivision_bunny_1.obj", mesh_subdivided)
 
     '''Apply quadratic error mesh decimation over the loaded mesh'''
     with cProfile.Profile() as pr:
         mesh_decimated = simplify_quadric_error(mesh, face_count=500)
         pr.print_stats(sort='cumtime')
-    om.write_mesh("assets/cube_decimated.obj", mesh_decimated)
+    om.write_mesh("assets/assignment1/decimation_bunny_500.obj", mesh_decimated)

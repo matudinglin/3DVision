@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>assignment1</title>
+    <style>
+        body {
+            margin: 0;
+        }
+    </style>
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.147.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.147.0/examples/jsm/" } }
+    </script>
+</head>
+
+<body>
+    <h1 style="text-align: center;">Assignment 1</h1>
+    <h2>Overview</h2>
+    <p>Here is the checklist for the assignment:</p>
+        <ul>
+            <li>Loop subdivision. &#10004 </li>
+            <li>Implement Quadratic Error based mesh decimation. &#10004</li>
+            <li>Write up your project, detials of data structure, algorithms, reporting runtime and visualiztions of results with different parameters. &#10004</li>
+            <li>Extra credit: Analyze corner cases (failure cases) and find solutions to prevent them. &#10004</li>
+            <li>Extra credit: Preserve the original vertices after decimation. &#10004</li></li>
+        </ul>
+        
+        I use openmesh library for halfedge data structure.
+
+    </p>
+    
+    <h2>Loop Subdivision</h2>
+    <p>Here is the cube after loop subdivision, iteration = 3</p>
+    <div id="container1"></div>
+
+    <p>Here is the bunny after loop subdivision, iteration = 1</p>
+    <div id="container2"></div>
+
+    <h2>Quadric Error Mesh Decimation</h2>
+    <p>Here is the bunny after loop subdivision, face = 500</p>
+    <div id="container3"></div>
+
+    <h2>Quadric Error Mesh Decimation</h2>
+    <p>Here is the bunny after loop subdivision, face = 500, all vertices are the subset of original vertices.</p>
+    <div id="container4"></div>
+
+    <script type="module" src="assignment1.js"></script>
+</body>
+
+</html>
