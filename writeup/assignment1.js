@@ -103,3 +103,4 @@ initViewer('container1', '../assets/assignment1/subdivision_cube_3.obj');
 initViewer('container2', '../assets/assignment1/subdivision_bunny_1.obj');
 initViewer('container3', '../assets/assignment1/decimation_bunny_2000.obj');
 initViewer('container4', '../assets/assignment1/decimation_bunny_500.obj');
+initViewer('container5', '../assets/assignment1/decimation_bunny_2000_subset.obj');

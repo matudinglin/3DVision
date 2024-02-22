@@ -17,7 +17,7 @@
 <body>
     <h1 style="text-align: center;">Assignment 1</h1>
     <h2>Overview</h2>
-    <p>Here is the checklist for the assignment:</p>
+    <p>Here is the checklist for the assignment:
         <ul>
             <li>Loop subdivision. &#10004 </li>
             <li>Implement Quadratic Error based mesh decimation. &#10004</li>
@@ -26,24 +26,49 @@
             <li>Extra credit: Preserve the original vertices after decimation. &#10004</li></li>
         </ul>
         
-        I use openmesh library for halfedge data structure.
+        I use <b>openmesh</b> library for halfedge data structure. Please install <a href="url">openmesh</a> before running the code.
+        Please note that openmesh library only supports python verison no later than <b>3.9</b>. 
+        <br><br>
+        There are more results could be found in folder: assets/assignment1.
+    </p>
 
+    <h2>Data structure and Algorithm</h2>
+    <p>Here is the pseudo code I used for <b>loop subdivision</b>, more details could be found in comments of the code:
+        <ul>
+            <li>Calculate new positions for existing vertices </li>
+            <li>Split every edge and create new vertices at midpoints</li>
+            <li>Reconnect vertices to form new faces  </li>
+        </ul>
+    </p>
+
+    <p>Here is the pseudo code I used for <b>mesh simplification</b>, more details could be found in comments of the code:
+        <ul>
+            <li>Compute quadric for each vertex</li>
+            <li>Compute edge cost for each valid pair</li>
+            <li>Collapse edges until the target face count is reached</li>
+                <ul>
+                    <li>Find the edge whose collapse minimizes the total quadric error</li>
+                    <li>Update quadrics for related the vertices and edges</li>
+                </ul>
+        </ul>
     </p>
     
     <h2>Loop Subdivision</h2>
-    <p>Here is the cube after loop subdivision, iteration = 3</p>
+    <p>Here is the cube after loop subdivision, iteration = 3, runtime = 0.026s:</p>
     <div id="container1"></div>
 
-    <p>Here is the bunny after loop subdivision, iteration = 1</p>
+    <p>Here is the bunny after loop subdivision, iteration = 1, runtime = 0.507s:</p>
     <div id="container2"></div>
 
     <h2>Quadric Error Mesh Decimation</h2>
-    <p>Here is the bunny after loop subdivision, face = 500</p>
+    <p>Here is the bunny after Quadric Error mesh simplification, face = 2000, runtime = 25.593s:</p>
     <div id="container3"></div>
 
-    <h2>Quadric Error Mesh Decimation</h2>
-    <p>Here is the bunny after loop subdivision, face = 500, all vertices are the subset of original vertices.</p>
+    <p>Here is the bunny after Quadric Error mesh simplification, face = 500, runtime = 30.033s:</p>
     <div id="container4"></div>
+
+    <p>Here is the bunny after Quadric Error mesh simplification but we preserve the original vertices, face = 2000, runtime = 25.840s:</p>
+    <div id="container5"></div>
 
     <script type="module" src="assignment1.js"></script>
 </body>

@@ -179,12 +179,12 @@ if __name__ == '__main__':
     
     # '''Apply loop subdivision over the loaded mesh'''
     # with cProfile.Profile() as pr:
-    #     mesh_subdivided = subdivision_loop(mesh, iterations=1)
+    #     mesh_subdivided = subdivision_loop(mesh, iterations=3)
     #     pr.print_stats(sort='cumtime')
-    # om.write_mesh("assets/assignment1/subdivision_bunny_1.obj", mesh_subdivided)
+    # om.write_mesh("assets/assignment1/subdivision_cube_3.obj", mesh_subdivided)
 
     '''Apply quadratic error mesh decimation over the loaded mesh'''
     with cProfile.Profile() as pr:
-        mesh_decimated = simplify_quadric_error(mesh, face_count=500)
+        mesh_decimated = simplify_quadric_error(mesh, face_count=2000, subset=True)
         pr.print_stats(sort='cumtime')
-    om.write_mesh("assets/assignment1/decimation_bunny_500.obj", mesh_decimated)
+    om.write_mesh("assets/assignment1/decimation_bunny_2000_subset.obj", mesh_decimated)
