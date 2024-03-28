@@ -238,6 +238,44 @@ class SFM(object):
             self.matches_data[(name1,name2)] = [matches, img1pts[mask], img2pts[mask], img1idx[mask],img2idx[mask]]
 
             return R,t
+    
+    def triangulation(self, img1pts, img2pts, R1, t1, R2, t2): 
+        """
+        Perform triangulation to estimate the 3D coordinates of points in the scene.
+
+        Args:
+            img1pts (numpy.ndarray): 2D image points in the first image.
+            img2pts (numpy.ndarray): 2D image points in the second image.
+            R1 (numpy.ndarray): Rotation matrix of the first camera.
+            t1 (numpy.ndarray): Translation vector of the first camera.
+            R2 (numpy.ndarray): Rotation matrix of the second camera.
+            t2 (numpy.ndarray): Translation vector of the second camera.
+
+        Returns:
+            numpy.ndarray: 3D coordinates of the triangulated points.
+
+        """
+        img1ptsHom = cv2.convertPointsToHomogeneous(img1pts)[:,0,:]
+        img2ptsHom = cv2.convertPointsToHomogeneous(img2pts)[:,0,:]
+
+        img1ptsNorm = (np.linalg.inv(self.K).dot(img1ptsHom.T)).T
+        img2ptsNorm = (np.linalg.inv(self.K).dot(img2ptsHom.T)).T
+
+        img1ptsNorm = cv2.convertPointsFromHomogeneous(img1ptsNorm)[:,0,:]
+        img2ptsNorm = cv2.convertPointsFromHomogeneous(img2ptsNorm)[:,0,:]
+
+        pts4d = cv2.triangulatePoints(np.hstack((R1,t1)),np.hstack((R2,t2)),
+                                        img1ptsNorm.T,img2ptsNorm.T)
+        pts3d = cv2.convertPointsFromHomogeneous(pts4d.T)[:,0,:]
+
+        return pts3d
+
+    def update_3D_reference(self, ref1, ref2, img1idx, img2idx, upp_limit, low_limit=0): 
+
+        ref1[img1idx] = np.arange(upp_limit) + low_limit
+        ref2[img2idx] = np.arange(upp_limit) + low_limit
+
+        return ref1, ref2
 
     def triangulate_two_views(self, name1, name2): 
         """
@@ -251,58 +289,20 @@ class SFM(object):
             None
         """
 
-        def triangulation(img1pts, img2pts, R1, t1, R2, t2): 
-            """
-            Perform triangulation to estimate the 3D coordinates of points in the scene.
-
-            Args:
-                img1pts (numpy.ndarray): 2D image points in the first image.
-                img2pts (numpy.ndarray): 2D image points in the second image.
-                R1 (numpy.ndarray): Rotation matrix of the first camera.
-                t1 (numpy.ndarray): Translation vector of the first camera.
-                R2 (numpy.ndarray): Rotation matrix of the second camera.
-                t2 (numpy.ndarray): Translation vector of the second camera.
-
-            Returns:
-                numpy.ndarray: 3D coordinates of the triangulated points.
-
-            """
-            img1ptsHom = cv2.convertPointsToHomogeneous(img1pts)[:,0,:]
-            img2ptsHom = cv2.convertPointsToHomogeneous(img2pts)[:,0,:]
-
-            img1ptsNorm = (np.linalg.inv(self.K).dot(img1ptsHom.T)).T
-            img2ptsNorm = (np.linalg.inv(self.K).dot(img2ptsHom.T)).T
-
-            img1ptsNorm = cv2.convertPointsFromHomogeneous(img1ptsNorm)[:,0,:]
-            img2ptsNorm = cv2.convertPointsFromHomogeneous(img2ptsNorm)[:,0,:]
-
-            pts4d = cv2.triangulatePoints(np.hstack((R1,t1)),np.hstack((R2,t2)),
-                                            img1ptsNorm.T,img2ptsNorm.T)
-            pts3d = cv2.convertPointsFromHomogeneous(pts4d.T)[:,0,:]
-
-            return pts3d
-
-        def update_3D_reference(ref1, ref2, img1idx, img2idx, upp_limit, low_limit=0): 
-
-            ref1[img1idx] = np.arange(upp_limit) + low_limit
-            ref2[img2idx] = np.arange(upp_limit) + low_limit
-
-            return ref1, ref2
-
         R1, t1, ref1 = self.image_data[name1]
         R2, t2, ref2 = self.image_data[name2]
 
         _, img1pts, img2pts, img1idx, img2idx = self.matches_data[(name1,name2)]
         
-        new_point_cloud = triangulation(img1pts, img2pts, R1, t1, R2, t2)
+        new_point_cloud = self.triangulation(img1pts, img2pts, R1, t1, R2, t2)
         self.point_cloud = np.concatenate((self.point_cloud, new_point_cloud), axis=0)
 
-        ref1, ref2 = update_3D_reference(ref1, ref2, img1idx, img2idx,new_point_cloud.shape[0],
+        ref1, ref2 = self.update_3D_reference(ref1, ref2, img1idx, img2idx,new_point_cloud.shape[0],
                                         self.point_cloud.shape[0]-new_point_cloud.shape[0])
         self.image_data[name1][-1] = ref1 
         self.image_data[name2][-1] = ref2 
 
-    def trangulate_new_view(self, name): 
+    def triangulate_new_view(self, name): 
         """
         Triangulates new view based on matches with previous views.
 
@@ -312,20 +312,43 @@ class SFM(object):
         Returns:
             None
         """
+        # Loop through all previous views to find matches and triangulate new points
         for prev_name in self.image_data.keys(): 
             if prev_name != name: 
+                # Load features and descriptors for both the previous and new view
                 kp1, desc1 = self.load_features(prev_name)
                 kp2, desc2 = self.load_features(name)  
 
+                # Retrieve the reference indices for the previous view
                 prev_name_ref = self.image_data[prev_name][-1]
-                matches = self.load_matches(prev_name,name)
-                matches = [match for match in matches if prev_name_ref[match.queryIdx] < 0]
+
+                # Load matches between the previous and new view
+                matches = self.load_matches(prev_name, name)
+
+                # Filter matches to only include those that correspond to already triangulated points
+                matches = [match for match in matches if prev_name_ref[match.queryIdx] >= 0]
 
                 if len(matches) > 0: 
-                    # TODO: Process the new view
-                    pass
+                    # Extract aligned matches between the two views
+                    img1pts, img2pts, img1idx, img2idx = self.get_aligned_matches(kp1, desc1, kp2, desc2, matches)
+
+                    # Retrieve rotation and translation matrices for both views
+                    R1, t1, _ = self.image_data[prev_name]
+                    R2, t2, _ = self.image_data[name]
+
+                    # Triangulate points between the two views
+                    new_point_cloud = self.triangulation(img1pts, img2pts, R1, t1, R2, t2)
+
+                    # Concatenate the newly triangulated points to the global point cloud
+                    self.point_cloud = np.concatenate((self.point_cloud, new_point_cloud), axis=0)
+
+                    # Update the 3D reference indices for the matched features in the new view
+                    updated_ref_indices = np.arange(self.point_cloud.shape[0] - new_point_cloud.shape[0], self.point_cloud.shape[0])
+                    self.image_data[name][-1][img2idx] = updated_ref_indices
+
                 else: 
-                    print('skipping {} and {}'.format(prev_name, name))
+                    print('Skipping {} and {} due to no valid matches.'.format(prev_name, name))
+
 
     def new_view_pose_estimation(self, name): 
         """
