@@ -326,7 +326,7 @@ class SFM(object):
                     pass
                 else: 
                     print('skipping {} and {}'.format(prev_name, name))
-        
+
     def new_view_pose_estimation(self, name): 
         """
         Estimates the pose (rotation and translation) of a new view based on 2D-3D point correspondences.
@@ -408,7 +408,7 @@ class SFM(object):
         colors = get_colors()
         pts2ply(self.point_cloud, colors, filename)
 
-    def compute_reprojection_error(self, name): 
+    def compute_reprojection_error(self, name):
         """
         Computes the reprojection error for a given image and also visualize the reprojection as PNG/JPG plot.
 
@@ -418,23 +418,43 @@ class SFM(object):
         Returns:
         - err (float): The average reprojection error.
         """
-
-        # TODO: Reprojection error calculation
-        R, t, ref = self.image_data[name]
-        kp, desc = self.load_features(name)
-        err = 0
-
-        # TODO: PLOT here
-        if self.opts.plot_error: 
-            fig,ax = plt.subplots()
-            image = cv2.imread(os.path.join(self.images_dir, name+'.jpg'))[:,:,::-1]
-            # ax = draw_correspondences(image, img_pts, reproj_pts, ax)
-            ax.set_title('reprojection error = {}'.format(err))
-            fig.savefig(os.path.join(self.out_err_dir, '{}.png'.format(name)))
-            plt.close(fig)
-            
-        return err
         
+        # Reprojection error calculation
+        R, t, ref = self.image_data[name]
+        kp, _ = self.load_features(name)
+
+        # Filter out invalid references
+        valid_refs = np.array(ref) >= 0
+        if not np.any(valid_refs):
+            print(f"No valid 3D points for image {name}.")
+            return np.nan
+
+        pts3D_indices = np.array(ref)[valid_refs].astype(int)
+        pts3D = self.point_cloud[pts3D_indices]
+
+        pts2D_projected, _ = cv2.projectPoints(pts3D, R, t, self.K, None)
+        pts2D_original = np.array([kp[i].pt for i in np.where(valid_refs)[0]])
+
+        # Calculate reprojection errors
+        errors = np.linalg.norm(pts2D_original - pts2D_projected.squeeze(), axis=1)
+        filtered_errors = errors[errors < self.opts.reprojection_thres]  # Filter outliers
+
+        mean_error = np.mean(filtered_errors) if filtered_errors.size else np.nan
+
+        # Visualization
+        if self.opts.plot_error:
+            fig, ax = plt.subplots(figsize=(10, 8))
+            img = cv2.imread(os.path.join(self.images_dir, f"{name}.jpg"))
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+            draw_correspondences(img, pts2D_original, pts2D_projected.squeeze(), ax, errorThreshold=self.opts.reprojection_thres)
+
+            ax.set_title(f'Reprojection error = {mean_error:.2f}')
+            plt.savefig(os.path.join(self.out_err_dir, f'{name}.png'))
+            plt.close(fig)
+
+        return mean_error
+
     def run(self):
         """
         Runs the structure from motion algorithm.
@@ -490,7 +510,7 @@ class SFM(object):
             print('Camera {0}: Pose Estimation [time={1:.3}s]'.format(new_name, this_time))
 
             #triangulation for new registered camera
-            self.trangulate_new_view(new_name)
+            self.triangulate_new_view(new_name)
             t1 = time()
             this_time = t1-t2
             total_time += this_time
