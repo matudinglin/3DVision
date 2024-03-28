@@ -109,10 +109,10 @@ def draw_correspondences(img, ptsTrue, ptsReproj, ax, drawOnly=50, errorThreshol
     ax.imshow(img)
 
     # Reduce the number of correspondences to draw if necessary
-    if drawOnly < len(ptsTrue):
-        indices = np.random.choice(len(ptsTrue), size=drawOnly, replace=False)
-    else:
-        indices = range(len(ptsTrue))
+    # if drawOnly < len(ptsTrue):
+    #     indices = np.random.choice(len(ptsTrue), size=drawOnly, replace=False)
+    # else:
+    indices = range(len(ptsTrue))
     
     for i in indices:
         true_pt = ptsTrue[i]
