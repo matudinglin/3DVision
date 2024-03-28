@@ -312,6 +312,7 @@ class SFM(object):
         Returns:
             None
         """
+        
         # Loop through all previous views to find matches and triangulate new points
         for prev_name in self.image_data.keys(): 
             if prev_name != name: 
@@ -339,16 +340,42 @@ class SFM(object):
                     # Triangulate points between the two views
                     new_point_cloud = self.triangulation(img1pts, img2pts, R1, t1, R2, t2)
 
-                    # Concatenate the newly triangulated points to the global point cloud
-                    self.point_cloud = np.concatenate((self.point_cloud, new_point_cloud), axis=0)
+                    # Initialize lists to hold valid points and their indices
+                    valid_points = []
+                    valid_indices_img2 = []
 
-                    # Update the 3D reference indices for the matched features in the new view
-                    updated_ref_indices = np.arange(self.point_cloud.shape[0] - new_point_cloud.shape[0], self.point_cloud.shape[0])
-                    self.image_data[name][-1][img2idx] = updated_ref_indices
+                    # Project and filter points by reprojection error and check for "infinity" points
+                    for idx, point in enumerate(new_point_cloud):
+                        # Skip points at "infinity" or with excessive depth
+                        if np.linalg.norm(point) > 1e8 or np.abs(point[2]) > 1e8:
+                            continue
 
+                        # Project point onto the new view
+                        point_homogeneous = np.hstack((point, [1])).reshape(-1,1)
+                        img2pt_projected = self.K @ (R2 @ point_homogeneous[:3] + t2)
+                        img2pt_projected /= img2pt_projected[2]  # Normalize to get pixel coordinates
+
+                        # Calculate reprojection error
+                        reprojection_error = np.linalg.norm(img2pts[idx] - img2pt_projected[:2].flatten())
+
+                        # Filter points based on a threshold reprojection error
+                        if reprojection_error < self.opts.reprojection_thres and point[2] > 0:
+                            valid_points.append(point)
+                            valid_indices_img2.append(img2idx[idx])
+
+                    # Update the point cloud and reference indices with valid points only
+                    if valid_points:
+                        valid_points = np.array(valid_points)
+                        # Concatenate the newly triangulated points to the global point cloud
+                        self.point_cloud = np.concatenate((self.point_cloud, valid_points), axis=0)
+                        # Update the 3D reference indices for the matched features in the new view
+                        updated_ref_indices = np.arange(self.point_cloud.shape[0] - valid_points.shape[0], self.point_cloud.shape[0])
+                        for i, idx in enumerate(valid_indices_img2):
+                            self.image_data[name][-1][idx] = updated_ref_indices[i]
+                    else: 
+                        print(f'No valid points found for {prev_name} and {name} after filtering.')
                 else: 
-                    print('Skipping {} and {} due to no valid matches.'.format(prev_name, name))
-
+                    print(f'Skipping {prev_name} and {name} due to no valid matches.')
 
     def new_view_pose_estimation(self, name): 
         """
