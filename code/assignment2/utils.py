@@ -89,20 +89,49 @@ def pts2ply(pts,colors,filename='out.ply'):
             f.write('{} {} {} {} {} {}\n'.format(pt[0],pt[1],pt[2],
                                                 cl[0],cl[1],cl[2]))
 
-def draw_correspondences(img, ptsTrue, ptsReproj, ax, drawOnly=50): 
+
+def draw_correspondences(img, ptsTrue, ptsReproj, ax, drawOnly=50, errorThreshold=None):
     """
-    Draws correspondence between ground truth and reprojected feature point
+    Draws correspondence between ground truth and reprojected feature points on the image.
 
     Args: 
-    ptsTrue, ptsReproj: (n,2) numpy array
-    ax: matplotlib axis object
-    drawOnly: max number of random points to draw
+        img: Image array.
+        ptsTrue: (n, 2) numpy array of true point coordinates.
+        ptsReproj: (n, 2) numpy array of reprojected point coordinates.
+        ax: Matplotlib axis object to draw on.
+        drawOnly: Maximum number of correspondences to draw.
+        errorThreshold: Optional threshold to highlight points with a reprojection error above this value.
 
     Returns: 
-    ax: matplotlib axis object
+        ax: Matplotlib axis object with the correspondences drawn.
     """
+    # Display the image as the plot background
     ax.imshow(img)
+
+    # Reduce the number of correspondences to draw if necessary
+    if drawOnly < len(ptsTrue):
+        indices = np.random.choice(len(ptsTrue), size=drawOnly, replace=False)
+    else:
+        indices = range(len(ptsTrue))
     
-    # TODO: draw correspondence between ptsTrue and ptsReproj
+    for i in indices:
+        true_pt = ptsTrue[i]
+        reproj_pt = ptsReproj[i]
+        reprojection_error = np.linalg.norm(true_pt - reproj_pt)
+
+        # Choose color based on errorThreshold
+        color = 'r' if errorThreshold is None or reprojection_error <= errorThreshold else 'm'
+
+        # Draw a line between true and reprojected points
+        ax.plot([true_pt[0], reproj_pt[0]], [true_pt[1], reproj_pt[1]], color=color, linewidth=1)
+        # Mark the true point location
+        ax.plot(true_pt[0], true_pt[1], 'go', markersize=5, label="True Point" if i == indices[0] else "")
+        # Mark the reprojected point location
+        ax.plot(reproj_pt[0], reproj_pt[1], 'bx', markersize=5, label="Reprojected Point" if i == indices[0] else "")
+
+    ax.set_xlabel('Image Width')
+    ax.set_ylabel('Image Height')
+    ax.set_title('Correspondence between True and Reprojected Points')
+    ax.legend()
 
     return ax
