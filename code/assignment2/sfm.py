@@ -343,10 +343,11 @@ class SFM(object):
                     # Project the new point cloud to the second image
                     img2pts_projected, _ = cv2.projectPoints(new_point_cloud, R2, t2, self.K, None)
 
-                    # Filter out points that are within the reprojection threshold
+                    # Filter out points that are within the reprojection threshold and wrong depth
                     for idx, (projected, original) in enumerate(zip(img2pts_projected.squeeze(), img2pts)):
                         reprojection_error = np.linalg.norm(original - projected)
-                        if reprojection_error < self.opts.reprojection_thres and new_point_cloud[idx][2] > 0:
+                        # TODO: Improve the depth filtering condition
+                        if reprojection_error < self.opts.reprojection_thres and new_point_cloud[idx][2] > 0 and new_point_cloud[idx][2] < 10:
                             valid_points.append(new_point_cloud[idx])
                             valid_indices_img2.append(img2idx[idx])
 
