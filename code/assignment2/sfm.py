@@ -316,18 +316,14 @@ class SFM(object):
         # Loop through all previous views to find matches and triangulate new points
         for prev_name in self.image_data.keys(): 
             if prev_name != name: 
-                # Load features and descriptors for both the previous and new view
+                # Load features, descriptors and references
                 kp1, desc1 = self.load_features(prev_name)
                 kp2, desc2 = self.load_features(name)  
-
-                # Retrieve the reference indices for the previous view
                 prev_name_ref = self.image_data[prev_name][-1]
 
-                # Load matches between the previous and new view
+                # Load matches between the two views
                 matches = self.load_matches(prev_name, name)
-
-                # Filter matches to only include those that correspond to already triangulated points
-                matches = [match for match in matches if prev_name_ref[match.queryIdx] >= 0]
+                matches = [match for match in matches if prev_name_ref[match.queryIdx] < 0]
 
                 if len(matches) > 0: 
                     # Extract aligned matches between the two views
