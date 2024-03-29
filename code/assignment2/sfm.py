@@ -344,28 +344,21 @@ class SFM(object):
                     valid_points = []
                     valid_indices_img2 = []
 
-                    # Project and filter points by reprojection error and check for "infinity" points
-                    for idx, point in enumerate(new_point_cloud):
-                        # Skip points at "infinity" or with excessive depth
-                        if np.linalg.norm(point) > 1e8 or np.abs(point[2]) > 1e8:
-                            continue
+                    # Project the new point cloud to the second image
+                    img2pts_projected, _ = cv2.projectPoints(new_point_cloud, R2, t2, self.K, None)
 
-                        # Project point onto the new view
-                        point_homogeneous = np.hstack((point, [1])).reshape(-1,1)
-                        img2pt_projected = self.K @ (R2 @ point_homogeneous[:3] + t2)
-                        img2pt_projected /= img2pt_projected[2]  # Normalize to get pixel coordinates
-
-                        # Calculate reprojection error
-                        reprojection_error = np.linalg.norm(img2pts[idx] - img2pt_projected[:2].flatten())
-
-                        # Filter points based on a threshold reprojection error
-                        if reprojection_error < self.opts.reprojection_thres and point[2] > 0:
-                            valid_points.append(point)
+                    # Filter out points that are within the reprojection threshold
+                    for idx, (projected, original) in enumerate(zip(img2pts_projected.squeeze(), img2pts)):
+                        reprojection_error = np.linalg.norm(original - projected)
+                        if reprojection_error < self.opts.reprojection_thres and new_point_cloud[idx][2] > 0:
+                            valid_points.append(new_point_cloud[idx])
                             valid_indices_img2.append(img2idx[idx])
 
+                    # Convert valid_points to a numpy array for further processing
+                    valid_points = np.array(valid_points)
+
                     # Update the point cloud and reference indices with valid points only
-                    if valid_points:
-                        valid_points = np.array(valid_points)
+                    if valid_points.size > 0:
                         # Concatenate the newly triangulated points to the global point cloud
                         self.point_cloud = np.concatenate((self.point_cloud, valid_points), axis=0)
                         # Update the 3D reference indices for the matched features in the new view
