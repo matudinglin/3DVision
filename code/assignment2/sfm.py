@@ -313,6 +313,15 @@ class SFM(object):
             None
         """
         
+        # Calculate percentiles for each dimension
+        p5_x, p5_y, p5_z = np.percentile(self.point_cloud, 5, axis=0)
+        p95_x, p95_y, p95_z = np.percentile(self.point_cloud, 95, axis=0)
+        
+        # Define dynamic ranges using percentiles
+        x_range = (p5_x, p95_x)
+        y_range = (p5_y, p95_y)
+        z_range = (p5_z, p95_z)
+        
         # Loop through all previous views to find matches and triangulate new points
         for prev_name in self.image_data.keys(): 
             if prev_name != name: 
@@ -346,8 +355,11 @@ class SFM(object):
                     # Filter out points that are within the reprojection threshold and wrong depth
                     for idx, (projected, original) in enumerate(zip(img2pts_projected.squeeze(), img2pts)):
                         reprojection_error = np.linalg.norm(original - projected)
-                        # TODO: Improve the depth filtering condition
-                        if reprojection_error < self.opts.reprojection_thres and new_point_cloud[idx][2] > 0 and new_point_cloud[idx][2] < 10:
+                        point = new_point_cloud[idx]
+                        if (reprojection_error < self.opts.reprojection_thres and 
+                            x_range[0] < point[0] < x_range[1] and 
+                            y_range[0] < point[1] < y_range[1] and 
+                            z_range[0] < point[2] < z_range[1]):
                             valid_points.append(new_point_cloud[idx])
                             valid_indices_img2.append(img2idx[idx])
 
