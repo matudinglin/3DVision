@@ -313,15 +313,6 @@ class SFM(object):
             None
         """
         
-        # Calculate percentiles for each dimension
-        p5_x, p5_y, p5_z = np.percentile(self.point_cloud, 5, axis=0)
-        p95_x, p95_y, p95_z = np.percentile(self.point_cloud, 95, axis=0)
-        
-        # Define dynamic ranges using percentiles
-        x_range = (p5_x, p95_x)
-        y_range = (p5_y, p95_y)
-        z_range = (p5_z, p95_z)
-        
         # Loop through all previous views to find matches and triangulate new points
         for prev_name in self.image_data.keys(): 
             if prev_name != name: 
@@ -344,6 +335,13 @@ class SFM(object):
 
                     # Triangulate points between the two views
                     new_point_cloud = self.triangulation(img1pts, img2pts, R1, t1, R2, t2)
+                          
+                    # Define dynamic ranges using percentiles
+                    p5_x, p5_y, p5_z = np.percentile(new_point_cloud, 5, axis=0)
+                    p95_x, p95_y, p95_z = np.percentile(new_point_cloud, 95, axis=0)
+                    x_range = (p5_x, p95_x)
+                    y_range = (p5_y, p95_y)
+                    z_range = (p5_z, p95_z)
 
                     # Initialize lists to hold valid points and their indices
                     valid_points = []
