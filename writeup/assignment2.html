@@ -17,32 +17,74 @@
 	</head>
 	<body>
 		<h1 style="text-align: center;">Assignment 2</h1>
-		<h2>Introduction</h2>
-		<p>For this assignment, you will be implementing Structure from Motion. 
+
+		<h2>Overview</h2>
+		<p>Here is the checklist for the assignment:
 			<ul>
-				<li>Feature Matching</li>
-				<li>Structure from Motion</li>
+				<li>Implement the structure-from-motion algorithm with the start code. &#10004 </li>
+				<li>Write up your project, algorithms, reporting results (reprojection error) and visualisations (point cloud and camera pose), compare your reconstruction with open source software Colmap. &#10004</li>
+				<li>Extra credit: Present results with your own captured data. &#10004</li>
+				<li>Extra credit: Experiment with outlier filtering techniques. &#10004</li>
 			</ul>
-			We have made available a visualization tool using the Three.js library implemented in "./js/assignment2.js" and an example implementation located in "./assignments/assignment2.py". Your objective is to fill in TODOs in the python files and make modification based on it. You are encouraged to use a programming language with which you are comfortable. The output results should be in the ply format, and you must visualize your outcomes accordingly. 
-			<br><br>
-			<b>How to Submit: </b>Please submit this template file along with your implementation as a zip file. The zip file should contain your source code, the generated results in PLY mesh format, and a report that has been modified using this HTML file. The report should comprise your results and a concise explanation of your implementation. Alternatively, you may choose to create a GitHub repository containing all these elements and provide a link for submission.
-			<br><br>
-			<b>Requirements / Rubric: </b>The grading is based on the correctness of your implementation. You are encouraged to use the visualization tool to debug your implementation. You can also use the visualization tool to test your implementation on other 3D models. </p>
-				<ul>
-					<li>+80 pts: Implement the structure-from-motion algorithm with the start code.  </li>
-					<li>+20 pts: Write up your project, algorithms, reporting results (reprojection error) and visualisations, compare your reconstruction with open source software Colmap.</li>
-					<li>+10 pts: Extra credit (see below)</li>
-					<li>-5*n pts: Lose 5 points for every time (after the first) you do not follow the instructions for the hand in format</li>
-				</ul>
-			<b>Extract Credit:</b> You are free to complete any extra credit:
-				<ul>
-					<li>up to 5 pts: Present results with your own captured data.</li>
-					<li>up to 10 pts: Implement Bundle Adjustment in incremental SFM.</li>
-					<li>up to 10 pts: Implement multi-view stereo (dense reconstruction).</li>
-					<li>up to 20 pts: Create mobile apps to turn your SFM to a scanner.</li>
-					<li>up to 10 pts: Any extra efforts you build on top of basic SFM.</li>
-				</ul>
+			
+			There are more results could be found in folder: assets/assignment2.
 		</p>
+		
+		<h2>Algorithm and Implementation</h2>
+		<h3>Structure from Motion</h3>
+		<p>
+			Here is the pseudo code I used for SFM algorithm, more details could be found in comments of the code:
+			<ul>
+				<li>Select the first two images for initial pose estimation and triangulation.</li>
+				<li>Perform baseline triangulation for the first two images.</li>
+				<li>Generate a 3D point cloud and evaluate reprojection error for the initial pair of images.</li>
+				<li>For each remaining image: 
+					<ul>
+						<li>Estimate the new camera pose.</li>
+						<li>Triangulate points from the new view.</li>
+						<li>Update the 3D point cloud and compute reprojection error for the new camera.</li>
+					</ul>
+			</ul>
+		</p>
+
+		<h3>Compute Reprojection Error</h3>
+		<p>
+			To compute the reprojection error, I used the following steps:
+			<ul>
+				<li>Extract image data, load features, and filter out invalid 3D point references.</li>
+				<li>Compute 3D points from valid references and project these points onto the image.</li>
+				<li>Calculate the errors between the original 2D points and the projected 2D points, and filter out outlier errors.</li>
+				<li>Calculate average reprojection error.</li>
+				<li>Plot the final result.</li>
+			</ul>
+		</p>
+		
+		<h3>Triangulate New View</h3>
+		<p>
+			I tried many different outlier filtering techniques, including RANSAC, dynamical range thresholding, and reprojection error filtering. I found that the best results were achieved by using a combination of reprojection error filtering and depth filtering.
+			<br><br>
+			For each new view, I used the following steps to triangulate the points:
+			<ul>
+				<li>Iterates through all previous views to find feature matches with the new view.</li>
+				<li>Filters matches to include only those not already associated with a point in the point cloud.</li>
+				<li>For each pair of views with valid matches:
+					<ul>
+						<li>Aligns the matched features and extracts corresponding 2D points from both images.</li>
+						<li>Performs triangulation to generate new 3D points between the two views.</li>
+						<li>Filters newly triangulated points based on reprojection error and position within dynamically defined ranges.</li>
+						<li>Updates the global point cloud and reference indices for the new view with valid points.</li>
+					</ul>
+				</li>
+			</ul>
+		</p>
+
+		<h2>Comparsion</h2>
+		<h3>Compare with resuly using colmap</h3>
+		<p>
+			
+		</p>
+
+
 		<h2>Structure From Motion</h2>
         <div id="container"></div>
 		<script type="module" src="../writeup/assignment2.js"></script>
