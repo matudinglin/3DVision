@@ -28,7 +28,7 @@ function initViewer(containerId, assetPath) {
     loader.load(
         assetPath,
         (geometry) => {
-            geometry.computeVertexNormals(); // Optional: Helps improve the appearance of point clouds with lighting, can be removed if unneeded.
+            geometry.computeVertexNormals();
             
             if (geometry.attributes.color) {
                 const material = new THREE.PointsMaterial({ vertexColors: true, size: 0.01 });
