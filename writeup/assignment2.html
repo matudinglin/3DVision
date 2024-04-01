@@ -23,7 +23,6 @@
 			<ul>
 				<li>Implement the structure-from-motion algorithm with the start code. &#10004 </li>
 				<li>Write up your project, algorithms, reporting results (reprojection error) and visualisations (point cloud and camera pose), compare your reconstruction with open source software Colmap. &#10004</li>
-				<li>Extra credit: Present results with your own captured data. &#10004</li>
 				<li>Extra credit: Experiment with outlier filtering techniques. &#10004</li>
 			</ul>
 			
@@ -81,12 +80,56 @@
 		<h2>Comparsion</h2>
 		<h3>Compare with resuly using colmap</h3>
 		<p>
+			I compare the result of my implementation with the result of Colmap. The results are similar, but there are some differences in the point cloud and camera pose. Beacuse Colmap uses more advanced techniques and optimizations, it produces a more accurate reconstruction with less noise. But my implementation is able to reconstruct more details of the scene, like the texture of the wall and statue.
+
+			<br><br>
+
+			Here is the comparison of the point cloud and camera pose between my implementation and Colmap for the fountain dataset:
 			
+			<h3>Mine</h3>
+			Mean Reprojection Error = 0.5122 [t=5.8s]
+			<div class="inline-block">
+				<img src="../assets/assignment2/fountain-P11-1.png" style='height: 40%; width: 40%;'>
+				<img src="../assets/assignment2/fountain-P11-2.png" style='height: 40%; width: 40%;'>
+			</div>
+			
+			<h3>Colmap</h3>
+			Mean Reprojection Error = 0.4278 [t=3.3s]
+
+			<div class="inline-block">
+				<img src="../assets/assignment2/fountain-P11-colmap-1.png" style='height: 40%; width: 40%;'>
+				<img src="../assets/assignment2/fountain-P11-colmap-2.png" style='height: 40%; width: 40%;'>
+			</div>
+
 		</p>
 
 
-		<h2>Structure From Motion</h2>
-        <div id="container"></div>
+		<h2>Showcases</h2>
+			<h3>Fountain-P11 Point Cloud Viewer</h3>
+			<div id="container1"></div>
+
+			<h3>Fountain-P11 Reprojection Error Images</h3>
+			Mean Reprojection Error = 0.5122 [t=5.8s]
+			<br><br>
+			<div class="inline-block">
+				<img src="../assets/assignment2/fountain-P11/errors/0000.png" style='height: 40%; width: 40%;'>
+				<img src="../assets/assignment2/fountain-P11/errors/0008.png" style='height: 40%; width: 40%;'>
+			</div>
+
+			<h3>Herz-Jesus-P8 Point Cloud Viewer</h3>
+			<div id="container2"></div>
+			
+			<h3>Herz-Jesus-P8 Images</h3>
+			Mean Reprojection Error = 1.086 [t=3.0s]
+			<br><br>
+			<br><br>
+			<div class="inline-block">
+				<img src="../assets/assignment2/Herz-Jesus-P8-1.png" style='height: 40%; width: 40%;'>
+				<img src="../assets/assignment2/Herz-Jesus-P8-2.png" style='height: 40%; width: 40%;'>
+				<img src="../assets/assignment2/0000.png" style='height: 40%; width: 40%;'>
+				<img src="../assets/assignment2/0007.png" style='height: 40%; width: 40%;'>
+			</div>
+
 		<script type="module" src="../writeup/assignment2.js"></script>
 	</body>
 </html>
