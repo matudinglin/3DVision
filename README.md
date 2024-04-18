@@ -1,4 +1,4 @@
-# Assignment Overview
+# Assignment 1 Overview
 
 Here is the checklist for the assignment:
 
@@ -14,3 +14,16 @@ Here is the checklist for the assignment:
 Additional results can be found in the folder: `assets/assignment1`.
 
 Open assignment1.html to see the writeup report.
+
+
+# Assignment 2 Overview
+
+Here is the checklist for the assignment:
+
+- [x] Implement the structure-from-motion algorithm with the start code.
+- [x] Write up your project, algorithms, reporting results (reprojection error) and visualisations (point cloud and camera pose), compare your reconstruction with open source software Colmap.
+- [x] Extra credit: Experiment with outlier filtering techniques. 
+
+Additional results can be found in the folder: `assets/assignment2`.
+
+Open assignment2.html to see the writeup report.
