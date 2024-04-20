@@ -27,3 +27,16 @@ Here is the checklist for the assignment:
 Additional results can be found in the folder: `assets/assignment2`.
 
 Open assignment2.html to see the writeup report.
+
+# Assignment 3 Overview
+
+Here is the checklist for the assignment:
+
+- [x] Complete the training using your own data.
+- [x] Write up your project, algorithms, reporting results and visualisations, compare your reconstruction with open source software Colmap.
+- [x] Extra credit: Present results with your own captured data.
+- [x] Extra credit: Train your models with both Nerf and 3DGS. 
+
+Additional results can be found in the folder: `assets/assignment3`.
+
+Open assignment3.html to see the writeup report.

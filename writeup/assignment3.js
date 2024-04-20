@@ -93,7 +93,3 @@ function initGUI(container, pointCloud) {
     gui.domElement.style.top = '48px';
     gui.domElement.style.right = '0px';
 }
-
-
-initViewer('container1', '../assets/assignment2/fountain-P11/point-clouds/cloud_11_view.ply');
-initViewer('container2', '../assets/assignment2/cloud_8_view.ply');

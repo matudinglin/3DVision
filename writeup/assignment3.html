@@ -62,65 +62,76 @@
 		<p>
 			I compare the result between 3DGS, NeRF and Colmap with my own captured scene. I used a 15 seconds videos the input data for the training. 
 			<br><br>
-			Here is the video:
-			<br><br>
-			<video width="320" height="240" controls>
-				<source src="../assets/assignment3/cat.mp4" type="video/mp4">
-				Your browser does not support the video tag.
+			Here is the input video:
+			<br>
+			<video width="640" height="480" controls>
+				<source src="../assets/assignment3/input_video.mp4" type="video/mp4">
 			</video>
 
 			<h3>Colmap</h3>
-			Mean Reprojection Error = 0.5122 [t=5.8s]
-			<div class="inline-block">
-				<img src="../assets/assignment2/fountain-P11-1.png" style='height: 40%; width: 40%;'>
-				<img src="../assets/assignment2/fountain-P11-2.png" style='height: 40%; width: 40%;'>
-			</div>
+			Here is the result of the Colmap:
+			<br>
+			<video width="640" height="400" controls>
+				<source src="../assets/assignment3/colmap/colmap.mp4" type="video/mp4">
+			</video>
+
 			
 			<h3>NeRF</h3>
-			Mean Reprojection Error = 0.4278 [t=3.3s]
-
-			<div class="inline-block">
-				<img src="../assets/assignment2/fountain-P11-colmap-1.png" style='height: 40%; width: 40%;'>
-				<img src="../assets/assignment2/fountain-P11-colmap-2.png" style='height: 40%; width: 40%;'>
-			</div>
+			Here is the result of the NeRF:
+			<br>
+			<video width="640" height="400" controls>
+				<source src="../assets/assignment3/nerf/nerf.mp4" type="video/mp4">
+			</video>
 
 			<h3>3DGS</h3>
-			Mean Reprojection Error = 0.4278 [t=3.3s]
+			Here is the result of the 3DGS:
+			<br>
+			<video width="640" height="480" controls>
+				<source src="../assets/assignment3/3dgs/3dgs.mp4" type="video/mp4">
+			</video>
 
-			<div class="inline-block">
-				<img src="../assets/assignment2/fountain-P11-colmap-1.png" style='height: 40%; width: 40%;'>
-				<img src="../assets/assignment2/fountain-P11-colmap-2.png" style='height: 40%; width: 40%;'>
-			</div>
+			<h3>Comparsion</h3>
+			<p>
+				From the results, we can observe that NeRF, 3DGS, and COLMAP all produce satisfactory results:
+				<ul>
+					<li>3DGS offers smoother surfaces compared to NeRF and COLMAP and renders faster than NeRF. 3D Gaussian Splatting is noted for its rendering speed and proves to be the fastest method. However, it sacrifices the precision of finer details.</li>
+					<li>NeRF delivers realistic and detailed outputs, but its initial results often contain significant background noise due to initialization with random noise. It requires substantial computational resources and extensive training and rendering time.</li>
+					<li>COLMAP produces the accurate and detailed reconstructions, but it cannot handle complex lighting and occlusion.</li>
+				</ul>
 
 		</p>
 
 
 		<h2>Showcases</h2>
-			<h3>Fountain-P11 Point Cloud Viewer</h3>
-			<div id="container1"></div>
-
-			<h3>Fountain-P11 Reprojection Error Images</h3>
-			Mean Reprojection Error = 0.5122 [t=5.8s]
+			<h3>NeRF Point Cloud</h3>
+			The point cloud is too large to be displayed in the browser. Here are some screenshots of the point cloud. You cloud find the full point cloud in the assets folder.
 			<br><br>
+			This point cloud is cutout from the original point cloud because the original point cloud contains noise background.
 			<div class="inline-block">
-				<img src="../assets/assignment2/fountain-P11/errors/0000.png" style='height: 40%; width: 40%;'>
-				<img src="../assets/assignment2/fountain-P11/errors/0008.png" style='height: 40%; width: 40%;'>
+				<img src="../assets/assignment3/nerf/nerf.png" style='height: 40%; width: 40%;'>
 			</div>
 
-			<h3>Herz-Jesus-P8 Point Cloud Viewer</h3>
-			<div id="container2"></div>
+			<h3>3DGS Point Cloud</h3>
+			The point cloud is too large to be displayed in the browser. Here are some screenshots of the point cloud. You cloud find the full point cloud in the assets folder.
+			<br><br>
+			Left: 7000 iterations, Right: 30000 iterations
+
+			<div class="inline-block">
+				<img src="../assets/assignment3/3dgs/3dgs_iteration_7000.png" style='height: 40%; width: 40%;'>
+				<img src="../assets/assignment3/3dgs/3dgs_iteration_30000.png" style='height: 40%; width: 40%;'>
+			</div>
 			
-			<h3>Herz-Jesus-P8 Images</h3>
-			Mean Reprojection Error = 1.086 [t=3.0s]
+			<h3>Colmap Point Cloud</h3>
+			The point cloud is too large to be displayed in the browser. Here are some screenshots of the point cloud. You cloud find the full point cloud in the assets folder.
 			<br><br>
-			<br><br>
+			Left: Sparse point cloud, Right: Dense point cloud
+
 			<div class="inline-block">
-				<img src="../assets/assignment2/Herz-Jesus-P8-1.png" style='height: 40%; width: 40%;'>
-				<img src="../assets/assignment2/Herz-Jesus-P8-2.png" style='height: 40%; width: 40%;'>
-				<img src="../assets/assignment2/Herz-Jesus-P8-1-error.png" style='height: 40%; width: 40%;'>
-				<img src="../assets/assignment2/Herz-Jesus-P8-2-error.png" style='height: 40%; width: 40%;'>
+				<img src="../assets/assignment3/colmap/colmap_sparse.png" style='height: 40%; width: 40%;'>
+				<img src="../assets/assignment3/colmap/colmap_dense.png" style='height: 40%; width: 40%;'>
 			</div>
 
-		<script type="module" src="../writeup/assignment2.js"></script>
+
+		<script type="module" src="../writeup/assignment3.js"></script>
 	</body>
 </html>
